@@ -1,39 +1,157 @@
-# AXI4 and AXI4-Lite: RTL Study and Verification
+# AXI4-Lite Protocol Verification Framework
 
-## Overview
+### Assertion-Driven RTL Verification | SystemVerilog | Functional Coverage
 
-This repository is my learning workspace for exploring AXI4 and AXI4-Lite bus protocols, RTL architecture, simulation, and hardware verification.
+**Verifying the protocol, not just the functionality.**
 
-The codebase is based on the open-source **verilog-axi** project by Alex Forencich. I am using it to understand practical bus implementations and develop additional verification skills.
+## Project Vision
 
-## Learning Objectives
+A hardware design can produce correct data in a simple test and still fail under timing stalls, independent channel handshakes, or reset conditions.
 
-- Understand AXI4 and AXI4-Lite interfaces and handshake mechanisms.
-- Study read and write transaction paths.
-- Explore RTL modules, FIFOs, adapters, and interconnects.
-- Run existing testbenches and analyze simulation results.
-- Develop additional test cases and verification checks.
+This project focuses on developing a structured verification framework for an AXI4-Lite interface that checks transaction correctness and protocol behavior using assertion-based verification, directed testing, constrained-random stimulus, functional coverage, and automated error detection.
 
-## Repository Structure
+The goal is to move beyond basic read/write testing toward systematic verification of important protocol scenarios.
 
-- `rtl/` — RTL modules and AXI components.
-- `tb/` — Testbenches and verification tests.
-- `syn/` — Synthesis-related files and project configurations.
-- `.github/` — Repository workflows and automation.
+## What Makes This Project Different?
 
-## Planned Contributions
+| Verification challenge | Proposed approach |
+|---|---|
+| Incorrect handshake behavior | SystemVerilog Assertions (SVA) |
+| Write address and data arrive at different times | Independent AW/W handshake scenarios |
+| Receiver temporarily blocks transfers | Back-pressure testing |
+| Read data does not match the written value | Reference-model scoreboard |
+| Important scenarios remain untested | Functional coverage analysis |
+| Bugs appear only in unusual sequences | Randomized transaction testing |
+| Repeated manual testing is inefficient | Automated simulation and regression |
 
-- Add directed tests for AXI4-Lite read and write transactions.
-- Develop protocol assertions using SystemVerilog Assertions (SVA).
-- Add self-checking verification and error-case testing.
-- Document simulation results and any original improvements.
+## Verification Architecture
 
-## Reference and Attribution
+```text
+          TEST SEQUENCE GENERATOR
+                     |
+          +----------+----------+
+          |                     |
+    Directed Tests       Randomized Tests
+          |                     |
+          +----------+----------+
+                     |
+              AXI4-Lite Driver
+                     |
+              AXI4-Lite DUT
+                     |
+          +----------+----------+
+          |          |          |
+       Monitor   Assertions   Coverage
+          |
+      Scoreboard
+          |
+     RESULT ANALYSIS
+          |
+    PASS / FAIL / COVERAGE
+```
 
-Original project: [Alex Forencich — verilog-axi](https://github.com/AlexForencich/verilog-axi)
+## Verification Strategy
 
-This repository is based on an existing open-source project. Original copyright notices and license terms are retained. Any new verification components or modifications will be documented separately.
+### 01 — Transaction Integrity
 
-## Current Status
+Verify register writes and reads. Compare actual read responses against a reference model.
 
-Learning and verification extensions are in progress. Test results and coverage metrics will be added after they have been run and verified.
+### 02 — Handshake Stress Testing
+
+Exercise independent write-address and write-data handshakes. Introduce stalls to verify that outstanding transfers are handled correctly.
+
+### 03 — Assertion-Based Verification
+
+Develop SVA properties to check signal stability during stalls, legal handshake behavior, and response consistency according to the protocol and DUT specification.
+
+### 04 — Coverage-Driven Testing
+
+Track scenarios such as read/write operations, response outcomes, stalled transfers, and address/data handshake ordering. Use coverage gaps to guide additional tests.
+
+### 05 — Randomized Regression
+
+Generate legal transaction sequences and run repeatable simulations using controlled random seeds.
+
+### 06 — Failure Analysis
+
+Capture assertion failures, transaction mismatches, and relevant waveform information to help identify the cause of a failure.
+
+## Key AXI4-Lite Concepts
+
+The interface contains five independent channels:
+
+- **AW:** Write address
+- **W:** Write data and byte strobes
+- **B:** Write response
+- **AR:** Read address
+- **R:** Read data and response
+
+Each channel uses a `VALID`/`READY` handshake. A transfer occurs when both signals are asserted at the active clock edge.
+
+## Corner Cases to Verify
+
+- Write address accepted before write data.
+- Write data accepted before write address.
+- Read and write activity occurring concurrently.
+- Extended back-pressure on response channels.
+- Reset during idle and selected transaction scenarios.
+- Byte-enable behavior through write strobes.
+- Repeated accesses to the same register.
+- Randomized transaction sequences.
+
+*Expected behavior for reset, invalid addresses, and responses must follow the selected DUT specification and applicable AXI requirements.*
+
+## Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| SystemVerilog | Testbench and verification logic |
+| SVA | Protocol property checking |
+| Functional coverage | Scenario measurement |
+| Reference-model scoreboard | Data integrity checking |
+| RTL simulator | Functional simulation and waveform analysis |
+| Git and GitHub | Source control and project documentation |
+
+## Metrics to Report
+
+Record actual simulation evidence rather than claiming results before testing:
+
+- Directed tests passed / total.
+- Randomized transactions completed.
+- Assertion failures detected.
+- Functional coverage achieved.
+- Read/write data mismatches.
+- Regression pass/fail status.
+
+## Project Status
+
+**Development focus:** Building a reusable AXI4-Lite verification environment.
+
+### Planned Milestones
+
+- [ ] Understand AXI4-Lite channels and handshake rules.
+- [ ] Create a reproducible simulation setup.
+- [ ] Implement directed read/write tests.
+- [ ] Add a reference-model scoreboard.
+- [ ] Develop and validate protocol assertions.
+- [ ] Add randomized stimulus and functional coverage.
+- [ ] Run regression tests and document measured results.
+
+## References
+
+- [Arm AMBA AXI Protocol Specifications](https://developer.arm.com/documentation/ihi0022/latest/)
+- [Open-source AXI RTL reference](https://github.com/AlexForencich/verilog-axi)
+
+## Author
+
+**Sumanth SG**
+
+Electronics and Communication Engineering
+
+Interests: RTL Design, VLSI Design Verification, SystemVerilog, and Digital Design.
+
+GitHub: [vikgithub123](https://github.com/vikgithub123)
+
+## License and Attribution
+
+This project builds on an existing open-source RTL codebase. Original copyright notices and applicable license terms are retained. Independently developed verification components and modifications will be documented as they are implemented.
